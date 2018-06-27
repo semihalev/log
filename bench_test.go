@@ -71,7 +71,7 @@ func BenchmarkJsonNoCtx(b *testing.B) {
 		Ctx:  []interface{}{},
 	}
 
-	jsonfmt := JsonFormat()
+	jsonfmt := JSONFormat()
 	for i := 0; i < b.N; i++ {
 		jsonfmt.Format(&r)
 	}
@@ -134,9 +134,9 @@ func BenchmarkDescendant8(b *testing.B) {
 
 // Copied from https://github.com/uber-go/zap/blob/master/benchmarks/log15_bench_test.go
 // (MIT License)
-func newLog15() Logger {
+func newLog() Logger {
 	logger := New()
-	logger.SetHandler(StreamHandler(ioutil.Discard, JsonFormat()))
+	logger.SetHandler(StreamHandler(ioutil.Discard, JSONFormat()))
 	return logger
 }
 
@@ -154,8 +154,8 @@ var _jane = user{
 	CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
 }
 
-func BenchmarkLog15AddingFields(b *testing.B) {
-	logger := newLog15()
+func BenchmarkLogAddingFields(b *testing.B) {
+	logger := newLog()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -175,8 +175,8 @@ func BenchmarkLog15AddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkLog15WithAccumulatedContext(b *testing.B) {
-	logger := newLog15().New(
+func BenchmarkLogWithAccumulatedContext(b *testing.B) {
+	logger := newLog().New(
 		"int", 1,
 		"int64", int64(1),
 		"float", 3.0,
@@ -196,8 +196,8 @@ func BenchmarkLog15WithAccumulatedContext(b *testing.B) {
 	})
 }
 
-func BenchmarkLog15WithoutFields(b *testing.B) {
-	logger := newLog15()
+func BenchmarkLogWithoutFields(b *testing.B) {
+	logger := newLog()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

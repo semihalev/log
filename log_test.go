@@ -94,7 +94,7 @@ func testFormatter(f Format) (Logger, *bytes.Buffer) {
 func TestJson(t *testing.T) {
 	t.Parallel()
 
-	l, buf := testFormatter(JsonFormat())
+	l, buf := testFormatter(JSONFormat())
 	l.Error("some message", "x", 1, "y", 3.2)
 
 	var v map[string]interface{}
@@ -363,7 +363,7 @@ func TestFailoverHandler(t *testing.T) {
 	w := &failingWriter{false}
 
 	l.SetHandler(FailoverHandler(
-		StreamHandler(w, JsonFormat()),
+		StreamHandler(w, JSONFormat()),
 		h))
 
 	l.Debug("test ok")

@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-stack/stack"
@@ -10,7 +11,7 @@ import (
 const timeKey = "t"
 const lvlKey = "lvl"
 const msgKey = "msg"
-const errorKey = "LOG15_ERROR"
+const errorKey = "LOG_ERROR"
 
 // Lvl is a type for predefined log levels.
 type Lvl int
@@ -149,6 +150,7 @@ func (l *logger) Error(msg string, ctx ...interface{}) {
 
 func (l *logger) Crit(msg string, ctx ...interface{}) {
 	l.write(msg, LvlCrit, ctx)
+	os.Exit(1)
 }
 
 func (l *logger) GetHandler() Handler {
