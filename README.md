@@ -72,4 +72,4 @@ srvlog.Warn("abnormal conn rate", log.Ctx{"rate": curRate, "low": lowRate, "high
 ```
 
 ## License
-MIT
+Apache
