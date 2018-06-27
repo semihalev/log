@@ -53,14 +53,6 @@ WARN[06-17|21:58:10] abnormal conn rate                       module=app/server 
 INFO[06-17|21:58:10] connection open                          module=app/server raddr=10.0.0.1
 ```
 
-## Breaking API Changes
-The following commits broke API stability. This reference is intended to help you understand the consequences of updating to a newer version
-of log15.
-
-- 57a084d014d4150152b19e4e531399a7145d1540 - Added a `Get()` method to the `Logger` interface to retrieve the current handler
-- 93404652ee366648fa622b64d1e2b67d75a3094a - `Record` field `Call` changed to `stack.Call` with switch to `github.com/go-stack/stack`
-- a5e7613673c73281f58e15a87d2cf0cf111e8152 - Restored `syslog.Priority` argument to the `SyslogXxx` handler constructors
-
 ## FAQ
 
 ### The varargs style is brittle and error prone! Can I have type safety please?
