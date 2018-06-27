@@ -186,7 +186,7 @@ func TestLogContext(t *testing.T) {
 
 	l, _, r := testLogger()
 	l = l.New("foo", "bar")
-	l.Crit("baz")
+	l.Error("baz")
 
 	if len(r.Ctx) != 2 {
 		t.Fatalf("Expected logger context in record context. Got length %d, expected %d", len(r.Ctx), 2)
@@ -205,7 +205,7 @@ func TestMapCtx(t *testing.T) {
 	t.Parallel()
 
 	l, _, r := testLogger()
-	l.Crit("test", Ctx{"foo": "bar"})
+	l.Error("test", Ctx{"foo": "bar"})
 
 	if len(r.Ctx) != 2 {
 		t.Fatalf("Wrong context length, got %d, expected %d", len(r.Ctx), 2)
@@ -299,17 +299,17 @@ func TestMatchFilterHandler(t *testing.T) {
 	l, h, r := testLogger()
 	l.SetHandler(MatchFilterHandler("err", nil, h))
 
-	l.Crit("test", "foo", "bar")
+	l.Error("test", "foo", "bar")
 	if r.Msg != "" {
 		t.Fatalf("expected filter handler to discard msg")
 	}
 
-	l.Crit("test2", "err", "bad fd")
+	l.Error("test2", "err", "bad fd")
 	if r.Msg != "" {
 		t.Fatalf("expected filter handler to discard msg")
 	}
 
-	l.Crit("test3", "err", nil)
+	l.Error("test3", "err", nil)
 	if r.Msg != "test3" {
 		t.Fatalf("expected filter handler to allow msg")
 	}
@@ -437,7 +437,7 @@ func TestCallerFileHandler(t *testing.T) {
 		t.Fatalf("Wrong context value type, got %T expected string", r.Ctx[1])
 	}
 
-	exp := fmt.Sprint("log15_test.go:", line-1)
+	exp := fmt.Sprint("log_test.go:", line-1)
 	if s != exp {
 		t.Fatalf("Wrong context value, got %s expected string matching %s", s, exp)
 	}
