@@ -418,7 +418,7 @@ func TestCallerFileHandler(t *testing.T) {
 	l := New()
 	h, r := testHandler()
 	l.SetHandler(CallerFileHandler(h))
-
+	l.SetLevel(LvlDebug)
 	l.Info("baz")
 	_, _, line, _ := runtime.Caller(0)
 
@@ -448,6 +448,7 @@ func TestCallerFuncHandler(t *testing.T) {
 
 	l := New()
 	h, r := testHandler()
+	l.SetLevel(LvlDebug)
 	l.SetHandler(CallerFuncHandler(h))
 
 	l.Info("baz")
@@ -485,6 +486,7 @@ func TestCallerStackHandler(t *testing.T) {
 	l := New()
 	h, r := testHandler()
 	l.SetHandler(CallerStackHandler("%#v", h))
+	l.SetLevel(LvlDebug)
 
 	lines := []int{}
 
