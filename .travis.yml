@@ -16,7 +16,7 @@ git:
 go_import_path: github.com/semihalev/log
 
 script: 
-  - go test -v -race
+  - go test -v -covermode=atomic -race -coverprofile=coverage.out
  
 after_success:
   - bash <(curl -s https://codecov.io/bash)
