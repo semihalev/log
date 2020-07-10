@@ -1,4 +1,5 @@
 # log [![godoc reference](https://godoc.org/github.com/semihalev/log?status.png)](https://godoc.org/github.com/semihalev/log) [![Build Status](https://travis-ci.org/semihalev/log.svg?branch=master)](https://travis-ci.org/semihalev/log)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsemihalev%2Flog.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsemihalev%2Flog?ref=badge_shield)
 
 Package log provides an opinionated, simple toolkit for best-practice logging in Go (golang) that is both human and machine readable. It is modeled after the Go standard library's [`io`](http://golang.org/pkg/io/) and [`net/http`](http://golang.org/pkg/net/http/) packages and is an alternative to the standard library's [`log`](http://golang.org/pkg/log/) package.
 
@@ -65,3 +66,6 @@ srvlog.Warn("abnormal conn rate", log.Ctx{"rate": curRate, "low": lowRate, "high
 
 ## License
 Apache
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsemihalev%2Flog.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsemihalev%2Flog?ref=badge_large)
