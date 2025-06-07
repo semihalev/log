@@ -40,7 +40,7 @@ Requires Go 1.23 or later.
 
 ## 🎯 Quick Start
 
-### Global Logger (Easy Migration from v0.x)
+### Global Logger
 
 ```go
 package main
@@ -48,7 +48,7 @@ package main
 import "github.com/semihalev/zlog"
 
 func main() {
-    // v0.x compatible - accepts any key-value pairs
+    // Simple key-value pairs
     zlog.Info("Application starting")
     zlog.Info("User logged in", "username", "john", "user_id", 12345)
     zlog.Error("Connection failed", "host", "localhost", "port", 5432)
@@ -65,7 +65,7 @@ func main() {
 ```
 
 The global logger intelligently handles both styles:
-- **Any values**: `zlog.Info("msg", "key", value, ...)` - v0.x compatible
+- **Any values**: `zlog.Info("msg", "key", value, ...)` - Simple and flexible
 - **Typed fields**: `zlog.Info("msg", zlog.String("key", "val"))` - Zero allocations
 
 ### Basic Logging
@@ -286,8 +286,8 @@ Comprehensive benchmarks on Apple M4 with Go 1.23 (structured logging with 5 fie
 |--------|------:|-----:|----------:|--------:|
 | **zlog (Nano)** | **7.28** | **0** | **0** | **1.0x** |
 | **zlog (Ultimate)** | **17.04** | **0** | **0** | **2.3x** |
-| **zlog (Typed)** | **66.40** | **0** | **0** | **baseline** |
-| **zlog (v0.x compat)** | **74.24** | **0** | **0** | **1.1x** |
+| **zlog (Structured)** | **66.40** | **0** | **0** | **baseline** |
+| **zlog (Global)** | **74.24** | **0** | **0** | **1.1x** |
 | Zerolog | 165.2 | 0 | 0 | 2.5x slower |
 | Zap | 346.0 | 320 | 1 | 5.2x slower |
 | slog (stdlib) | 602.5 | 120 | 3 | 9.1x slower |
@@ -315,30 +315,6 @@ Comprehensive benchmarks on Apple M4 with Go 1.23 (structured logging with 5 fie
 - **Inlining**: Critical paths are inlined by the compiler
 - **Direct syscalls**: Using Go's runtime linkname for nanotime()
 
-## 🔄 Migration from v0.x
-
-The new version provides full backward compatibility while offering better performance:
-
-### v0.x Style (Still Works!)
-```go
-// Old code continues to work
-zlog.Info("User action", "username", "john", "action", "login", "ip", "192.168.1.1")
-zlog.Error("Database error", "error", err, "query", sqlQuery)
-```
-
-### New Style (Better Performance)
-```go
-// Use typed fields for zero allocations
-zlog.Info("User action",
-    zlog.String("username", "john"),
-    zlog.String("action", "login"),
-    zlog.String("ip", "192.168.1.1"))
-```
-
-### Performance Comparison
-- **v0.x style with common types**: 57.62 ns/op, 0 allocations
-- **Typed fields**: 59.08 ns/op, 0 allocations
-- Both are significantly faster than other loggers!
 
 ## 🧪 Testing
 
