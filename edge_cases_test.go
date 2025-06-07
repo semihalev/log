@@ -1,16 +1,27 @@
 package zlog
 
 import (
+	"io"
 	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
 )
 
+// countingWriter is a test helper that counts writes
+type countingWriter struct {
+	count *atomic.Int32
+}
+
+func (cw *countingWriter) Write(p []byte) (int, error) {
+	cw.count.Add(1)
+	return len(p), nil
+}
+
 func TestEdgeCases(t *testing.T) {
 	t.Run("FieldsLogDisabled", func(t *testing.T) {
 		logger := NewStructured()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 		logger.SetLevel(LevelError) // Disable Info
 
 		// This should not log
@@ -19,7 +30,7 @@ func TestEdgeCases(t *testing.T) {
 
 	t.Run("MessageTooLong", func(t *testing.T) {
 		logger := New()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 
 		// Create a very long message
 		longMsg := strings.Repeat("x", 300)
@@ -28,7 +39,7 @@ func TestEdgeCases(t *testing.T) {
 
 	t.Run("TooManyFields", func(t *testing.T) {
 		logger := NewStructured()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 
 		// Create 300 fields (more than 255 max)
 		fields := make([]Field, 300)
@@ -41,7 +52,7 @@ func TestEdgeCases(t *testing.T) {
 
 	t.Run("LongFieldKey", func(t *testing.T) {
 		logger := NewStructured()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 
 		// Create a field with very long key
 		longKey := strings.Repeat("k", 300)
@@ -50,7 +61,7 @@ func TestEdgeCases(t *testing.T) {
 
 	t.Run("LongStringValue", func(t *testing.T) {
 		logger := NewStructured()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 
 		// Create a very long string value
 		longValue := strings.Repeat("v", 70000)
@@ -59,7 +70,7 @@ func TestEdgeCases(t *testing.T) {
 
 	t.Run("LongBytesValue", func(t *testing.T) {
 		logger := NewStructured()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 
 		// Create very long bytes
 		longBytes := make([]byte, 70000)
@@ -68,7 +79,7 @@ func TestEdgeCases(t *testing.T) {
 
 	t.Run("BufferOverflow", func(t *testing.T) {
 		logger := NewStructured()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 
 		// Try to overflow the 1024 byte buffer
 		fields := make([]Field, 0)
@@ -85,7 +96,7 @@ func TestTerminalWriterEdgeCases(t *testing.T) {
 
 	t.Run("InvalidMagic", func(t *testing.T) {
 		data := make([]byte, 30)
-		err := tw.Write(data)
+		_, err := tw.Write(data)
 		if err == nil {
 			t.Error("Expected error for invalid magic")
 		}
@@ -93,7 +104,7 @@ func TestTerminalWriterEdgeCases(t *testing.T) {
 
 	t.Run("TooShort", func(t *testing.T) {
 		data := make([]byte, 10)
-		err := tw.Write(data)
+		_, err := tw.Write(data)
 		if err == nil {
 			t.Error("Expected error for too short data")
 		}
@@ -165,7 +176,7 @@ func TestMMapWriterErrors(t *testing.T) {
 		defer mw.Close()
 
 		// Write empty data
-		err := mw.Write([]byte{})
+		_, err := mw.Write([]byte{})
 		if err != nil {
 			t.Error("Empty write should succeed")
 		}
@@ -217,17 +228,18 @@ func TestMMapWriterErrors(t *testing.T) {
 func TestAsyncWriterEdgeCases(t *testing.T) {
 	t.Run("BufferFull", func(t *testing.T) {
 		var writeCount atomic.Int32
-		countWriter := func(b []byte) error {
-			writeCount.Add(1)
-			return nil
+
+		// Create a custom writer that counts writes
+		cw := &countingWriter{
+			count: &writeCount,
 		}
 
-		aw := NewAsyncWriter(Writer(countWriter), 16)
+		aw := NewAsyncWriter(cw, 16)
 		defer aw.Close()
 
 		// Write many items
 		for i := 0; i < 100; i++ {
-			err := aw.Write([]byte("test"))
+			_, err := aw.Write([]byte("test"))
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
@@ -323,5 +335,5 @@ func TestZeroAllocLoggerDisabled(t *testing.T) {
 func TestStderrWriter(t *testing.T) {
 	// Just verify it doesn't panic
 	w := StderrWriter
-	w([]byte("test"))
+	w.Write([]byte("test"))
 }

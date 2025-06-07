@@ -1,6 +1,7 @@
 package zlog
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"testing"
@@ -9,7 +10,7 @@ import (
 func TestFatal(t *testing.T) {
 	if os.Getenv("BE_FATAL") == "1" {
 		logger := New()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 		logger.Fatal("fatal error")
 		return
 	}
@@ -30,7 +31,7 @@ func TestFatal(t *testing.T) {
 func TestStructuredFatal(t *testing.T) {
 	if os.Getenv("BE_FATAL_STRUCTURED") == "1" {
 		logger := NewStructured()
-		logger.SetWriter(DiscardWriter)
+		logger.SetWriter(io.Discard)
 		logger.Fatal("fatal error", String("key", "value"))
 		return
 	}

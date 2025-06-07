@@ -5,28 +5,29 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Test Coverage](https://img.shields.io/badge/coverage-83.7%25-brightgreen.svg)](https://github.com/semihalev/zlog)
 
-The world's fastest logging library for Go with **true zero allocations**, achieving an incredible **7.28 nanoseconds** per log operation. Benchmarks prove it's **5.2x faster than Zap** and **2.5x faster than Zerolog**. Built from the ground up for Go 1.23+ with a focus on extreme performance.
+The world's fastest logging library for Go with **true zero allocations**, achieving an incredible **7.375 nanoseconds** per log operation. Benchmarks prove it's **5.2x faster than Zap** and **2.5x faster than Zerolog**. Built from the ground up for Go 1.23+ with a focus on extreme performance.
 
 ## 🚀 Performance
 
 ```
-BenchmarkNanoLogger-10              147687733      7.425 ns/op      0 B/op    0 allocs/op
-BenchmarkUltimateLogger-10           53423659     18.84 ns/op      0 B/op    0 allocs/op
-BenchmarkStructuredLogger-10         20530777     59.08 ns/op      0 B/op    0 allocs/op
-BenchmarkZeroAllocLogger-10          19329052     56.89 ns/op    256 B/op    1 allocs/op
-BenchmarkUltralog-10                 17233688     70.05 ns/op    256 B/op    1 allocs/op
-BenchmarkDisabledDebug-10          1000000000      1.281 ns/op      0 B/op    0 allocs/op
+BenchmarkNanoLogger-10              169957999      7.375 ns/op      0 B/op    0 allocs/op
+BenchmarkUltimateLogger-10           62639742     16.89 ns/op      0 B/op    0 allocs/op
+BenchmarkStructuredLogger-10         22695696     52.93 ns/op      0 B/op    0 allocs/op
+BenchmarkZeroAllocLogger-10          19473274     57.32 ns/op    256 B/op    1 allocs/op
+BenchmarkUltralog-10                 17437510     69.36 ns/op    256 B/op    1 allocs/op
+BenchmarkDisabledDebug-10          1000000000      0.2457 ns/op     0 B/op    0 allocs/op
 ```
 
 ## ✨ Features
 
 - **True Zero Allocations**: Multiple loggers achieve 0 B/op, 0 allocs/op
-- **Extreme Performance**: 7.425 ns/op - faster than just copying a string!
+- **Extreme Performance**: 7.375 ns/op - faster than just copying a string!
 - **Lock-Free Design**: Uses atomic operations for thread-safe, contention-free logging
 - **Cache-Line Aligned**: Structures optimized for CPU cache efficiency (64 bytes)
 - **Beautiful Terminal Output**: Colored, formatted output for development
 - **Structured Logging**: Type-safe fields without interface boxing
 - **Multiple Writers**: Terminal, Memory-mapped files, Async ring buffer
+- **Standard io.Writer**: Compatible with any Go io.Writer implementation
 - **Binary Format**: Compact binary encoding for maximum throughput
 - **Go 1.23+ Optimized**: Built using the latest Go features and runtime optimizations
 
@@ -140,17 +141,17 @@ nano.Info(buf[:], "Fastest possible logging")
    - Zero-allocation field encoding with buffer pool
    - Perfect for production systems
 
-3. **ZeroAllocLogger** - Uses ZeroWriter interface (56 ns/op)
+3. **ZeroAllocLogger** - Uses ZeroWriter interface (57 ns/op)
    - Stack-allocated buffers only
    - Special interface to prevent heap escapes
    - Ideal for hot paths
 
-4. **UltimateLogger** - Direct memory writes (18.84 ns/op, 0 allocs)
+4. **UltimateLogger** - Direct memory writes (16.89 ns/op, 0 allocs)
    - Lock-free ring buffer
    - Memory-mapped output
    - For extreme throughput requirements
 
-5. **NanoLogger** - The absolute fastest (7.425 ns/op, 0 allocs)
+5. **NanoLogger** - The absolute fastest (7.375 ns/op, 0 allocs)
    - Caller provides buffer
    - Minimal overhead
    - For the most demanding applications
@@ -162,7 +163,7 @@ nano.Info(buf[:], "Fastest possible logging")
 - **DiscardWriter** - Discard all output (benchmarking)
 - **MMapWriter** - Memory-mapped files for zero-syscall writes
 - **AsyncWriter** - Lock-free ring buffer for async logging
-- **Custom Writers** - Implement the simple `Writer` interface
+- **Custom Writers** - Any `io.Writer` implementation works
 
 ## 🎨 Terminal Output
 
@@ -215,16 +216,24 @@ logger.Info("This won't block")
 ### Custom Writers
 
 ```go
-// Implement your own writer
+// Any io.Writer works - files, network connections, buffers, etc.
+file, _ := os.Create("app.log")
+logger := zlog.New()
+logger.SetWriter(file)
+
+// Or use multiple writers with io.MultiWriter
+multi := io.MultiWriter(os.Stdout, file)
+logger.SetWriter(multi)
+
+// Custom implementation
 type CustomWriter struct{}
 
-func (w CustomWriter) Write(p []byte) error {
+func (w CustomWriter) Write(p []byte) (int, error) {
     // Your custom logic here
-    return nil
+    return len(p), nil
 }
 
-logger := zlog.New()
-logger.SetWriter(CustomWriter{}.Write)
+logger.SetWriter(CustomWriter{})
 ```
 
 ### Log Levels
@@ -265,17 +274,18 @@ Run on Apple M4:
 ```bash
 $ go test -bench=. -benchmem
 
-BenchmarkNanoLogger-10              147687733      7.425 ns/op      0 B/op    0 allocs/op
-BenchmarkNanoLoggerWithOutput-10    155354494      7.958 ns/op      0 B/op    0 allocs/op
-BenchmarkUltimateLogger-10           53423659     18.84 ns/op       0 B/op    0 allocs/op
-BenchmarkUltimateLoggerParallel-10   18684834     65.53 ns/op       0 B/op    0 allocs/op
-BenchmarkStructuredLogger-10         20530777     59.08 ns/op       0 B/op    0 allocs/op
-BenchmarkStructuredLogger5Fields-10  13193077     80.72 ns/op       0 B/op    0 allocs/op
-BenchmarkStructuredLogger10Fields-10 10458685    110.7 ns/op        0 B/op    0 allocs/op
-BenchmarkZeroAllocLogger-10          19329052     56.89 ns/op     256 B/op    1 allocs/op
-BenchmarkUltralog-10                 17233688     70.05 ns/op     256 B/op    1 allocs/op
-BenchmarkAsyncWriter-10               7035481    184.6 ns/op      544 B/op    2 allocs/op
-BenchmarkMMapWriter-10               11997840     94.14 ns/op     256 B/op    1 allocs/op
+BenchmarkNanoLogger-10              169957999      7.375 ns/op      0 B/op    0 allocs/op
+BenchmarkNanoLoggerWithOutput-10    154822544      7.727 ns/op      0 B/op    0 allocs/op
+BenchmarkUltimateLogger-10           62639742     16.89 ns/op       0 B/op    0 allocs/op
+BenchmarkUltimateLoggerParallel-10   18866749     64.13 ns/op       0 B/op    0 allocs/op
+BenchmarkStructuredLogger-10         22695696     52.93 ns/op       0 B/op    0 allocs/op
+BenchmarkStructuredLogger5Fields-10  18610578     64.26 ns/op       0 B/op    0 allocs/op
+BenchmarkStructuredLogger10Fields-10 12231709     98.53 ns/op       0 B/op    0 allocs/op
+BenchmarkZeroAllocLogger-10          19473274     57.32 ns/op     256 B/op    1 allocs/op
+BenchmarkUltralog-10                 17437510     69.36 ns/op     256 B/op    1 allocs/op
+BenchmarkAsyncWriter-10               7555957    152.0 ns/op      542 B/op    1 allocs/op
+BenchmarkMMapWriter-10               14132212     84.80 ns/op     256 B/op    1 allocs/op
+BenchmarkDisabledDebug-10          1000000000      0.2457 ns/op     0 B/op    0 allocs/op
 ```
 
 ## 📊 Comparison with Other Loggers
@@ -284,16 +294,16 @@ Comprehensive benchmarks on Apple M4 with Go 1.23 (structured logging with 5 fie
 
 | Logger | ns/op | B/op | allocs/op | vs zlog |
 |--------|------:|-----:|----------:|--------:|
-| **zlog (Nano)** | **7.28** | **0** | **0** | **1.0x** |
-| **zlog (Ultimate)** | **17.04** | **0** | **0** | **2.3x** |
-| **zlog (Structured)** | **66.40** | **0** | **0** | **baseline** |
-| **zlog (Global)** | **74.24** | **0** | **0** | **1.1x** |
-| Zerolog | 165.2 | 0 | 0 | 2.5x slower |
-| Zap | 346.0 | 320 | 1 | 5.2x slower |
-| slog (stdlib) | 602.5 | 120 | 3 | 9.1x slower |
-| Logrus | 1455 | 1416 | 25 | 21.9x slower |
+| **zlog (Nano)** | **7.38** | **0** | **0** | **1.0x** |
+| **zlog (Ultimate)** | **16.89** | **0** | **0** | **2.3x** |
+| **zlog (Structured)** | **64.26** | **0** | **0** | **baseline** |
+| **zlog (Global)** | **64.55** | **0** | **0** | **1.0x** |
+| Zerolog | 165.2 | 0 | 0 | 2.6x slower |
+| Zap | 346.0 | 320 | 1 | 5.4x slower |
+| slog (stdlib) | 602.5 | 120 | 3 | 9.4x slower |
+| Logrus | 1455 | 1416 | 25 | 22.6x slower |
 
-**Key Achievement**: zlog is **5.2x faster than Zap** and **2.5x faster than Zerolog** while maintaining zero allocations!
+**Key Achievement**: zlog is **5.4x faster than Zap** and **2.6x faster than Zerolog** while maintaining zero allocations!
 
 ## 🔬 How It Works
 
@@ -341,7 +351,7 @@ http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
     
     // Your handler logic here
     
-    // Log with 18.84 ns overhead
+    // Log with 16.89 ns overhead
     logger.Info(fmt.Sprintf("%s %s %d %dns", 
         r.Method, r.URL.Path, 200, time.Since(start).Nanoseconds()))
 })

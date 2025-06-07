@@ -1,6 +1,7 @@
 package zlog
 
 import (
+	"io"
 	"sync/atomic"
 	"unsafe"
 )
@@ -78,6 +79,6 @@ func SetLevel(level Level) {
 }
 
 // SetWriter sets the writer for the default logger
-func SetWriter(w Writer) {
+func SetWriter(w io.Writer) {
 	Default().SetWriter(w)
 }

@@ -120,10 +120,6 @@ func NewStructured() *StructuredLogger {
 //
 //go:noinline
 func (l *StructuredLogger) logFields(level Level, msg string, fields []Field) {
-	if !l.shouldLog(level) {
-		return
-	}
-
 	// Get buffer from pool
 	bufPtr := structuredPool.Get().(*[]byte)
 	buf := *bufPtr
@@ -157,7 +153,7 @@ func (l *StructuredLogger) logFields(level Level, msg string, fields []Field) {
 
 	// Write
 	w := l.getWriter()
-	w(buf[:pos])
+	w.Write(buf[:pos])
 
 	// Return buffer to pool
 	structuredPool.Put(bufPtr)
@@ -298,27 +294,47 @@ func encodeField(buf []byte, f *Field) int {
 }
 
 // Debug logs a debug message with fields
+//
+//go:inline
 func (l *StructuredLogger) Debug(msg string, fields ...Field) {
-	l.logFields(LevelDebug, msg, fields)
+	if l.level <= LevelDebug {
+		l.logFields(LevelDebug, msg, fields)
+	}
 }
 
 // Info logs an info message with fields
+//
+//go:inline
 func (l *StructuredLogger) Info(msg string, fields ...Field) {
-	l.logFields(LevelInfo, msg, fields)
+	if l.level <= LevelInfo {
+		l.logFields(LevelInfo, msg, fields)
+	}
 }
 
 // Warn logs a warning message with fields
+//
+//go:inline
 func (l *StructuredLogger) Warn(msg string, fields ...Field) {
-	l.logFields(LevelWarn, msg, fields)
+	if l.level <= LevelWarn {
+		l.logFields(LevelWarn, msg, fields)
+	}
 }
 
 // Error logs an error message with fields
+//
+//go:inline
 func (l *StructuredLogger) Error(msg string, fields ...Field) {
-	l.logFields(LevelError, msg, fields)
+	if l.level <= LevelError {
+		l.logFields(LevelError, msg, fields)
+	}
 }
 
 // Fatal logs a fatal message with fields and exits
+//
+//go:inline
 func (l *StructuredLogger) Fatal(msg string, fields ...Field) {
-	l.logFields(LevelFatal, msg, fields)
-	os.Exit(1)
+	if l.level <= LevelFatal {
+		l.logFields(LevelFatal, msg, fields)
+		os.Exit(1)
+	}
 }

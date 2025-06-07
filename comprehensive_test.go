@@ -9,13 +9,24 @@ import (
 	"unsafe"
 )
 
+// testCapture is a test helper that implements io.Writer
+type testCapture struct {
+	fn func([]byte) error
+}
+
+func (tc *testCapture) Write(p []byte) (int, error) {
+	err := tc.fn(p)
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 func TestAllFieldTypes(t *testing.T) {
 	var buf bytes.Buffer
+	// Direct write to buffer
 	logger := NewStructured()
-	logger.SetWriter(func(b []byte) error {
-		buf.Write(b)
-		return nil
-	})
+	logger.SetWriter(&buf)
 
 	// Test all field types
 	logger.Info("all fields",
@@ -51,11 +62,9 @@ func TestAllLogLevels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
+			// Direct write to buffer
 			logger := New()
-			logger.SetWriter(func(b []byte) error {
-				buf.Write(b)
-				return nil
-			})
+			logger.SetWriter(&buf)
 			logger.SetLevel(LevelDebug) // Enable all levels
 
 			tt.fn(logger, "test message")
@@ -81,11 +90,9 @@ func TestStructuredLogLevels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
+			// Direct write to buffer
 			logger := NewStructured()
-			logger.SetWriter(func(b []byte) error {
-				buf.Write(b)
-				return nil
-			})
+			logger.SetWriter(&buf)
 			logger.SetLevel(LevelDebug) // Enable all levels
 
 			tt.fn(logger, "test", String("key", "value"))
@@ -113,11 +120,9 @@ func TestGetLevel(t *testing.T) {
 
 func TestLevelFiltering(t *testing.T) {
 	var buf bytes.Buffer
+	// Direct write to buffer
 	logger := New()
-	logger.SetWriter(func(b []byte) error {
-		buf.Write(b)
-		return nil
-	})
+	logger.SetWriter(&buf)
 	logger.SetLevel(LevelWarn) // Only Warn and above
 
 	buf.Reset()
@@ -152,23 +157,15 @@ func TestTerminalWriterFull(t *testing.T) {
 		t.Fatal("Failed to create terminal writer")
 	}
 
-	// Test writer function
-	w := tw.Writer()
-	if w == nil {
-		t.Fatal("Writer() returned nil")
-	}
-
 	// Test Write with valid binary log
 	var buf bytes.Buffer
+	// Direct write to buffer
 	logger := New()
-	logger.SetWriter(func(b []byte) error {
-		buf.Write(b)
-		return nil
-	})
+	logger.SetWriter(&buf)
 	logger.Info("test message")
 
 	// Now decode it
-	err := tw.Write(buf.Bytes())
+	_, err := tw.Write(buf.Bytes())
 	if err != nil {
 		t.Errorf("Failed to write: %v", err)
 	}
@@ -340,14 +337,17 @@ func TestAsyncWriter(t *testing.T) {
 	var received [][]byte
 	var mu sync.Mutex
 
-	testWriter := func(b []byte) error {
-		mu.Lock()
-		defer mu.Unlock()
-		received = append(received, append([]byte(nil), b...))
-		return nil
+	// Create a custom writer that captures data
+	tw := &testCapture{
+		fn: func(b []byte) error {
+			mu.Lock()
+			defer mu.Unlock()
+			received = append(received, append([]byte(nil), b...))
+			return nil
+		},
 	}
 
-	aw := NewAsyncWriter(Writer(testWriter), 16)
+	aw := NewAsyncWriter(tw, 16)
 	defer aw.Close()
 
 	// Write some data
@@ -382,14 +382,13 @@ func TestMMapWriter(t *testing.T) {
 
 	// Test write
 	data := []byte("hello mmap")
-	err = mw.Write(data)
+	_, err = mw.Write(data)
 	if err != nil {
 		t.Errorf("Write failed: %v", err)
 	}
 
 	// Test writer function
-	w := mw.Writer()
-	err = w([]byte("test"))
+	_, err = mw.Write([]byte("test"))
 	if err != nil {
 		t.Errorf("Writer failed: %v", err)
 	}

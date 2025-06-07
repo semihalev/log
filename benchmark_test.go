@@ -1,12 +1,13 @@
 package zlog
 
 import (
+	"io"
 	"testing"
 )
 
 func BenchmarkUltralog(b *testing.B) {
 	logger := New()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -17,7 +18,7 @@ func BenchmarkUltralog(b *testing.B) {
 
 func BenchmarkUltralogParallel(b *testing.B) {
 	logger := New()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -30,7 +31,7 @@ func BenchmarkUltralogParallel(b *testing.B) {
 
 func BenchmarkStructuredLogger(b *testing.B) {
 	logger := NewStructured()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -44,7 +45,7 @@ func BenchmarkStructuredLogger(b *testing.B) {
 
 func BenchmarkStructuredLoggerParallel(b *testing.B) {
 	logger := NewStructured()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -60,7 +61,7 @@ func BenchmarkStructuredLoggerParallel(b *testing.B) {
 
 func BenchmarkStructuredLogger5Fields(b *testing.B) {
 	logger := NewStructured()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -76,7 +77,7 @@ func BenchmarkStructuredLogger5Fields(b *testing.B) {
 
 func BenchmarkStructuredLogger10Fields(b *testing.B) {
 	logger := NewStructured()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -97,7 +98,7 @@ func BenchmarkStructuredLogger10Fields(b *testing.B) {
 
 func BenchmarkDisabledDebug(b *testing.B) {
 	logger := New()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 	logger.SetLevel(LevelInfo) // Debug disabled
 
 	b.ResetTimer()
@@ -108,11 +109,11 @@ func BenchmarkDisabledDebug(b *testing.B) {
 }
 
 func BenchmarkAsyncWriter(b *testing.B) {
-	aw := NewAsyncWriter(DiscardWriter, 1024)
+	aw := NewAsyncWriter(io.Discard, 1024)
 	defer aw.Close()
 
 	logger := New()
-	logger.SetWriter(aw.Writer())
+	logger.SetWriter(aw)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -130,7 +131,7 @@ func BenchmarkMMapWriter(b *testing.B) {
 	defer mw.Close()
 
 	logger := New()
-	logger.SetWriter(mw.Writer())
+	logger.SetWriter(mw)
 
 	b.ResetTimer()
 	b.ReportAllocs()

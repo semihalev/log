@@ -51,10 +51,10 @@ func NewMMapWriter(path string, size int64) (*MMapWriter, error) {
 }
 
 // Write writes data to the memory-mapped file
-func (w *MMapWriter) Write(b []byte) error {
+func (w *MMapWriter) Write(b []byte) (int, error) {
 	n := int64(len(b))
 	if n == 0 {
-		return nil
+		return 0, nil
 	}
 
 	// Get current offset and advance
@@ -77,7 +77,7 @@ func (w *MMapWriter) Write(b []byte) error {
 		go w.syncRange(startPage*w.pageSize, w.pageSize)
 	}
 
-	return nil
+	return len(b), nil
 }
 
 // syncRange asynchronously syncs a range of memory
@@ -95,11 +95,4 @@ func (w *MMapWriter) Close() error {
 		return err
 	}
 	return w.file.Close()
-}
-
-// Writer returns a Writer function for the logger
-func (w *MMapWriter) Writer() Writer {
-	return func(b []byte) error {
-		return w.Write(b)
-	}
 }

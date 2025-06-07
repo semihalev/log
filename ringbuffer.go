@@ -1,6 +1,7 @@
 package zlog
 
 import (
+	"io"
 	"runtime"
 	"sync/atomic"
 	"unsafe"
@@ -96,12 +97,12 @@ func (rb *RingBuffer) Get() ([]byte, bool) {
 // AsyncWriter wraps a writer with a ring buffer for async operation
 type AsyncWriter struct {
 	rb     *RingBuffer
-	writer Writer
+	writer io.Writer
 	done   chan struct{}
 }
 
 // NewAsyncWriter creates a new async writer
-func NewAsyncWriter(w Writer, bufferSize int) *AsyncWriter {
+func NewAsyncWriter(w io.Writer, bufferSize int) *AsyncWriter {
 	aw := &AsyncWriter{
 		rb:     NewRingBuffer(bufferSize),
 		writer: w,
@@ -125,12 +126,12 @@ func (aw *AsyncWriter) consumer() {
 				if !ok {
 					return
 				}
-				aw.writer(data)
+				aw.writer.Write(data)
 			}
 		default:
 			data, ok := aw.rb.Get()
 			if ok {
-				aw.writer(data)
+				aw.writer.Write(data)
 			} else {
 				runtime.Gosched()
 			}
@@ -139,25 +140,18 @@ func (aw *AsyncWriter) consumer() {
 }
 
 // Write adds data to the ring buffer
-func (aw *AsyncWriter) Write(b []byte) error {
+func (aw *AsyncWriter) Write(b []byte) (int, error) {
 	// Try to put in ring buffer
 	if aw.rb.Put(b) {
-		return nil
+		return len(b), nil
 	}
 
 	// Buffer full - write directly (backpressure)
-	return aw.writer(b)
+	return aw.writer.Write(b)
 }
 
 // Close stops the async writer
 func (aw *AsyncWriter) Close() error {
 	close(aw.done)
 	return nil
-}
-
-// Writer returns a Writer function for the logger
-func (aw *AsyncWriter) Writer() Writer {
-	return func(b []byte) error {
-		return aw.Write(b)
-	}
 }

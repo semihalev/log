@@ -3,6 +3,7 @@ package zlog
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -50,23 +51,16 @@ func NewTerminalWriter(out *os.File) *TerminalWriter {
 	}
 }
 
-// Writer returns a Writer function for the logger
-func (w *TerminalWriter) Writer() Writer {
-	return func(b []byte) error {
-		return w.Write(b)
-	}
-}
-
 // Write decodes binary log and outputs formatted text
-func (w *TerminalWriter) Write(b []byte) error {
+func (w *TerminalWriter) Write(b []byte) (int, error) {
 	if len(b) < 22 { // Minimum header size
-		return fmt.Errorf("invalid log entry: too short")
+		return 0, fmt.Errorf("invalid log entry: too short")
 	}
 
 	// Decode binary header
 	magic := binary.LittleEndian.Uint32(b[0:4])
 	if magic != MagicHeader {
-		return fmt.Errorf("invalid magic header")
+		return 0, fmt.Errorf("invalid magic header")
 	}
 
 	// version := b[4]
@@ -90,7 +84,7 @@ func (w *TerminalWriter) Write(b []byte) error {
 	// Get buffer from pool
 	bufInterface := w.buf.Get()
 	if bufInterface == nil {
-		return fmt.Errorf("buffer pool returned nil")
+		return 0, fmt.Errorf("buffer pool returned nil")
 	}
 	buf := bufInterface.([]byte)
 	buf = buf[:0]
@@ -175,7 +169,10 @@ func (w *TerminalWriter) Write(b []byte) error {
 
 	// Write to output
 	_, err := w.out.Write(buf)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return len(b), nil
 }
 
 // getLevelColor returns the color for a log level
@@ -320,11 +317,11 @@ func escapeString(s string) string {
 // Convenience functions for creating terminal writers
 
 // StdoutTerminal creates a terminal writer for stdout
-func StdoutTerminal() Writer {
-	return NewTerminalWriter(os.Stdout).Writer()
+func StdoutTerminal() io.Writer {
+	return NewTerminalWriter(os.Stdout)
 }
 
 // StderrTerminal creates a terminal writer for stderr
-func StderrTerminal() Writer {
-	return NewTerminalWriter(os.Stderr).Writer()
+func StderrTerminal() io.Writer {
+	return NewTerminalWriter(os.Stderr)
 }

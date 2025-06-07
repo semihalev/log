@@ -13,14 +13,11 @@ func TestGlobalLogger(t *testing.T) {
 
 	// Create a buffer to capture output
 	var buf bytes.Buffer
-	captureWriter := func(b []byte) error {
-		buf.Write(b)
-		return nil
-	}
+	// Direct write to buffer
 
 	// Create new logger with custom writer
 	logger := NewStructured()
-	logger.SetWriter(captureWriter)
+	logger.SetWriter(&buf)
 	SetDefault(logger)
 
 	// Test global functions
@@ -48,14 +45,11 @@ func TestGlobalSetLevel(t *testing.T) {
 
 	// Create a buffer to capture output
 	var buf bytes.Buffer
-	captureWriter := func(b []byte) error {
-		buf.Write(b)
-		return nil
-	}
+	// Direct write to buffer
 
 	// Create new logger
 	logger := NewStructured()
-	logger.SetWriter(captureWriter)
+	logger.SetWriter(&buf)
 	SetDefault(logger)
 
 	// Set level to Error
@@ -91,13 +85,10 @@ func TestGlobalSetWriter(t *testing.T) {
 
 	// Create a buffer to capture output
 	var buf bytes.Buffer
-	captureWriter := func(b []byte) error {
-		buf.Write(b)
-		return nil
-	}
+	// Direct write to buffer
 
 	// Set global writer
-	SetWriter(captureWriter)
+	SetWriter(&buf)
 
 	// Log something
 	Info("test message")

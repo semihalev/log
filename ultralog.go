@@ -4,6 +4,7 @@ package zlog
 
 import (
 	"encoding/binary"
+	"io"
 	"os"
 	"sync/atomic"
 	"time"
@@ -32,10 +33,11 @@ const (
 
 // Logger is the core logger - exactly one cache line (64 bytes)
 type Logger struct {
-	state    atomic.Uint64  // level(8) | flags(8) | reserved(48)
-	writer   unsafe.Pointer // *Writer
-	sequence atomic.Uint64  // Global sequence number
-	_        [40]byte       // Padding to 64 bytes
+	level    Level          // 1 byte - current log level
+	_        [7]byte        // 7 bytes padding for alignment
+	writer   unsafe.Pointer // 8 bytes - *io.Writer
+	sequence atomic.Uint64  // 8 bytes - Global sequence number
+	_        [40]byte       // 40 bytes padding to 64 bytes
 }
 
 // Record represents a log entry - exactly one cache line (64 bytes)
@@ -50,31 +52,27 @@ type Record struct {
 	Data     [32]byte // 32 bytes - inline storage for small messages
 }
 
-// Writer is a function that writes log data
-type Writer func([]byte) error
-
 // New creates a new ultra-fast logger
 func New() *Logger {
 	l := &Logger{}
 	l.SetLevel(LevelInfo)
-	l.SetWriter(StdoutWriter)
+	l.SetWriter(os.Stdout)
 	return l
 }
 
-// SetLevel atomically sets the log level
+// SetLevel sets the log level
+// Note: This is not thread-safe - set level during initialization only
 func (l *Logger) SetLevel(level Level) {
-	state := l.state.Load()
-	state = (state &^ 0xFF) | uint64(level)
-	l.state.Store(state)
+	l.level = level
 }
 
-// GetLevel atomically gets the log level
+// GetLevel gets the current log level
 func (l *Logger) GetLevel() Level {
-	return Level(l.state.Load() & 0xFF)
+	return l.level
 }
 
 // SetWriter atomically sets the writer
-func (l *Logger) SetWriter(w Writer) {
+func (l *Logger) SetWriter(w io.Writer) {
 	atomic.StorePointer(&l.writer, unsafe.Pointer(&w))
 }
 
@@ -82,24 +80,20 @@ func (l *Logger) SetWriter(w Writer) {
 //
 //go:inline
 func (l *Logger) shouldLog(level Level) bool {
-	return Level(l.state.Load()&0xFF) <= level
+	return l.level <= level
 }
 
 // getWriter gets the current writer
 //
 //go:inline
-func (l *Logger) getWriter() Writer {
-	return *(*Writer)(atomic.LoadPointer(&l.writer))
+func (l *Logger) getWriter() io.Writer {
+	return *(*io.Writer)(atomic.LoadPointer(&l.writer))
 }
 
 // logDirect logs directly without allocations
 //
 //go:noinline
 func (l *Logger) logDirect(level Level, msg string) {
-	if !l.shouldLog(level) {
-		return
-	}
-
 	// Stack allocated buffer
 	var buf [256]byte
 	pos := 0
@@ -148,50 +142,62 @@ func (l *Logger) logDirect(level Level, msg string) {
 	}
 
 	// Write
-	l.getWriter()(buf[:pos])
+	l.getWriter().Write(buf[:pos])
 }
 
 // Debug logs a debug message
+//
+//go:inline
 func (l *Logger) Debug(msg string) {
-	l.logDirect(LevelDebug, msg)
+	if l.level <= LevelDebug {
+		l.logDirect(LevelDebug, msg)
+	}
 }
 
 // Info logs an info message
+//
+//go:inline
 func (l *Logger) Info(msg string) {
-	l.logDirect(LevelInfo, msg)
+	if l.level <= LevelInfo {
+		l.logDirect(LevelInfo, msg)
+	}
 }
 
 // Warn logs a warning message
+//
+//go:inline
 func (l *Logger) Warn(msg string) {
-	l.logDirect(LevelWarn, msg)
+	if l.level <= LevelWarn {
+		l.logDirect(LevelWarn, msg)
+	}
 }
 
 // Error logs an error message
+//
+//go:inline
 func (l *Logger) Error(msg string) {
-	l.logDirect(LevelError, msg)
+	if l.level <= LevelError {
+		l.logDirect(LevelError, msg)
+	}
 }
 
 // Fatal logs a fatal message and exits
+//
+//go:inline
 func (l *Logger) Fatal(msg string) {
-	l.logDirect(LevelFatal, msg)
-	os.Exit(1)
+	if l.level <= LevelFatal {
+		l.logDirect(LevelFatal, msg)
+		os.Exit(1)
+	}
 }
 
-// Built-in writers
+// Built-in writers (kept for backward compatibility)
 
 // StdoutWriter writes to stdout
-var StdoutWriter Writer = func(b []byte) error {
-	_, err := os.Stdout.Write(b)
-	return err
-}
+var StdoutWriter io.Writer = os.Stdout
 
 // StderrWriter writes to stderr
-var StderrWriter Writer = func(b []byte) error {
-	_, err := os.Stderr.Write(b)
-	return err
-}
+var StderrWriter io.Writer = os.Stderr
 
 // DiscardWriter discards all output
-var DiscardWriter Writer = func(b []byte) error {
-	return nil
-}
+var DiscardWriter io.Writer = io.Discard

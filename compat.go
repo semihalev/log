@@ -150,7 +150,7 @@ func (l *StructuredLogger) logKV(level Level, msg string, keysAndValues ...any) 
 
 	// Write
 	w := l.getWriter()
-	w(buf[:pos])
+	w.Write(buf[:pos])
 
 	// Return buffer to pool
 	structuredPool.Put(bufPtr)

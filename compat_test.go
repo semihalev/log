@@ -2,6 +2,7 @@ package zlog
 
 import (
 	"bytes"
+	"io"
 	"testing"
 )
 
@@ -10,10 +11,7 @@ func TestCompatibility(t *testing.T) {
 	t.Run("KVMethods", func(t *testing.T) {
 		var buf bytes.Buffer
 		logger := NewStructured()
-		logger.SetWriter(func(b []byte) error {
-			buf.Write(b)
-			return nil
-		})
+		logger.SetWriter(&buf)
 
 		// Test all KV methods
 		logger.DebugKV("debug msg", "key1", "value1", "key2", 42)
@@ -34,10 +32,7 @@ func TestCompatibility(t *testing.T) {
 
 		var buf bytes.Buffer
 		logger := NewStructured()
-		logger.SetWriter(func(b []byte) error {
-			buf.Write(b)
-			return nil
-		})
+		logger.SetWriter(&buf)
 		SetDefault(logger)
 
 		// Old style calls should work
@@ -54,10 +49,7 @@ func TestCompatibility(t *testing.T) {
 	t.Run("SimpleLogger", func(t *testing.T) {
 		var buf bytes.Buffer
 		logger := NewSimple()
-		logger.SetWriter(func(b []byte) error {
-			buf.Write(b)
-			return nil
-		})
+		logger.SetWriter(&buf)
 
 		// Test variadic any
 		logger.Info("hello", "world", 123)
@@ -80,10 +72,7 @@ func TestCompatibility(t *testing.T) {
 	t.Run("AnyField", func(t *testing.T) {
 		var buf bytes.Buffer
 		logger := NewStructured()
-		logger.SetWriter(func(b []byte) error {
-			buf.Write(b)
-			return nil
-		})
+		logger.SetWriter(&buf)
 
 		// Mix Field types with Any
 		logger.Info("test",
@@ -105,7 +94,7 @@ func TestGlobalCompatibilityMigration(t *testing.T) {
 
 	// Just verify the API works - content checking would need terminal decoder
 	logger := NewStructured()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 	SetDefault(logger)
 
 	// These should all work like v0.x without errors
@@ -120,7 +109,7 @@ func TestGlobalCompatibilityMigration(t *testing.T) {
 
 func TestSimpleLoggerFormatted(t *testing.T) {
 	logger := NewSimple()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	// Test formatted output - just verify no panic
 	logger.Infof("Server started on %s:%d", "localhost", 8080)
@@ -132,7 +121,7 @@ func TestSimpleLoggerFormatted(t *testing.T) {
 // Benchmark compatibility layer
 func BenchmarkCompatibilityKV(b *testing.B) {
 	logger := NewStructured()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -142,7 +131,7 @@ func BenchmarkCompatibilityKV(b *testing.B) {
 
 func BenchmarkSimpleLogger(b *testing.B) {
 	logger := NewSimple()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -152,7 +141,7 @@ func BenchmarkSimpleLogger(b *testing.B) {
 
 func BenchmarkSimpleLoggerSingle(b *testing.B) {
 	logger := NewSimple()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -162,7 +151,7 @@ func BenchmarkSimpleLoggerSingle(b *testing.B) {
 
 func BenchmarkCompatibilityCommonTypes(b *testing.B) {
 	logger := NewStructured()
-	logger.SetWriter(DiscardWriter)
+	logger.SetWriter(io.Discard)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
