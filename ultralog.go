@@ -56,7 +56,13 @@ type Record struct {
 func New() *Logger {
 	l := &Logger{}
 	l.SetLevel(LevelInfo)
-	l.SetWriter(os.Stdout)
+	// Auto-detect output format based on terminal
+	if isTerminal(os.Stdout.Fd()) {
+		l.SetWriter(NewTerminalWriter(os.Stdout))
+	} else {
+		// For non-terminal, we need a logfmt writer
+		l.SetWriter(NewLogfmtWriter(os.Stdout))
+	}
 	return l
 }
 
@@ -69,6 +75,30 @@ func (l *Logger) SetLevel(level Level) {
 // GetLevel gets the current log level
 func (l *Logger) GetLevel() Level {
 	return l.level
+}
+
+// NewBinary creates a logger with binary output (original behavior)
+func NewBinary() *Logger {
+	l := &Logger{}
+	l.SetLevel(LevelInfo)
+	l.SetWriter(os.Stdout)
+	return l
+}
+
+// NewTerminal creates a logger with colored terminal output
+func NewTerminal() *Logger {
+	l := &Logger{}
+	l.SetLevel(LevelInfo)
+	l.SetWriter(NewTerminalWriter(os.Stdout))
+	return l
+}
+
+// NewLogfmt creates a logger with logfmt output
+func NewLogfmt() *Logger {
+	l := &Logger{}
+	l.SetLevel(LevelInfo)
+	l.SetWriter(NewLogfmtWriter(os.Stdout))
+	return l
 }
 
 // SetWriter atomically sets the writer

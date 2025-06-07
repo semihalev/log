@@ -10,9 +10,9 @@ import (
 var defaultLogger unsafe.Pointer
 
 func init() {
-	// Initialize with a structured logger writing to terminal
+	// Initialize with a structured logger with auto-detected output format
 	logger := NewStructured()
-	logger.SetWriter(StdoutTerminal())
+	// NewStructured() already calls New() which does auto-detection
 	atomic.StorePointer(&defaultLogger, unsafe.Pointer(logger))
 }
 
